@@ -44,10 +44,7 @@ public:
 
 private:
     queueitem *front, *rear;
-
     void init();
     void deinit();
-    void do_enqueue(BoardState bs);
-    BoardState do_dequeue();
 };
 #endif
