@@ -24,12 +24,7 @@ Player::Player(Side side) {
      */
 }
 
-/*
-Will eventually be able decide the next move to make and return it.
-*/
-Move * doMove(Move * opponentsMove, int msLeft) {
-  return nullptr;
-}
+
 
 /*
  * Destructor for the player.
