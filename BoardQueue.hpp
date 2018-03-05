@@ -5,14 +5,12 @@
 
 struct BoardState {
 
-  Board b;
-  Side s;
+  Board * b;
   int depth;
   Move * ancestor;
 
-  BoardState(Board bo, Side si, int de, Move * anc) {
+  BoardState(Board * bo, int de, Move * anc) {
     b = bo;
-    s = si;
     depth = de;
     ancestor = anc;
   }
