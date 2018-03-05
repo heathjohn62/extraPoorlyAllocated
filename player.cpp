@@ -51,7 +51,7 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     time(&t);
     //First make the oponents move on our board.
     board.doMove(opponentsMove, opponent_side);
-
+    BoardQueue q = new BoardQueue();
 
     bestX = -1; // Reset our best Move spot variables.
     bestY = -1;
@@ -69,14 +69,14 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
           // Create a copy of the board to avoid messing up the board.
           Board * copy  = board.copy();
           copy->doMove(&m, player_side); //Make the move on the copy and then evaluate it.
-          
+          q->enqueue(new BoardState(copy, 1, &m));
     
 
           }
         }
       }
-    }
-
+    
+    BFS(31.0, q)
 
     if (bestX == -1 && bestY == -1) { //Indicates we have no valid moves.
 
@@ -100,7 +100,7 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
      * that the program has to calculate a move. 
      * @param q A queue of board objects, among other relevant information. 
      */
-    void BFS(double limit, BoardQueue &q)
+    void BFS(double limit, BoardQueue * q)
     {
         BoardState * b;
         int depth = 1;
