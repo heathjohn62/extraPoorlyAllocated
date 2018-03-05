@@ -53,18 +53,20 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     bestX = -1; // Reset our best Move spot variables.
     bestY = -1;
 
-    // Create a copy of the board to avoid messing up the board.
-    Board * copy  = board.copy();
 
-    int bestScore = 0;
+
+    int bestScore = -1000;
     for (int i = 0; i < 8; i++) { //Iterate through board looking for moves.
       for (int j = 0; j < 8; j++) {
         Move m(i, j);
-        if (copy->checkMove(&m, player_side)) {
+        if (board.checkMove(&m, player_side)) {
+
+          // Create a copy of the board to avoid messing up the board.
+          Board * copy  = board.copy();
 
           copy->doMove(&m, player_side); //Make the move on the copy and then evaluate it.
           int score = getBoardScore(copy, player_side);
-
+          delete copy;
           if (score > bestScore) { //If the score is good, save the move.
             bestScore = score;
             bestX = i;
@@ -75,12 +77,15 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     }
 
 
+
+
     if (bestX == -1 && bestY == -1) { //Indicates we have no valid moves.
 
       cerr << "PLAYER PASS" << endl;
       return nullptr;
 
     } else {
+
       // This will tell the framework to make the best move.
       Move * toMake = new Move(bestX, bestY);
       board.doMove(toMake, player_side);
