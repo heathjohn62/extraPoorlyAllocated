@@ -18,11 +18,14 @@ public:
     int bestX = -1;
     int bestY = -1;
 
-    
+
     Move *doMove(Move *opponentsMove, int msLeft);
 
     // Flag to tell if the player is running within the test_minimax context
     bool testingMinimax;
+
+  private:
+    int getBoardScore(Board * b, Side side);
 };
 
 static int board_weights[8][8]=
@@ -37,39 +40,5 @@ static int board_weights[8][8]=
 
 
 
-/**
- * Returns a metric of the state of the board, where higher numbers are
- * better with respect to the side given as a parameter.
- *
- * @param board A board pointer which references the board to be evaluated
- * @param side The side with which the board is evaluated with respect to.
- */
-int getBoardScore(Board * board, Side side)
-{
-    Side opposite;
-    if (side == WHITE)
-    {
-        opposite = BLACK;
-    }
-    else
-    {
-        opposite = WHITE;
-    }
-    int boardScore = 0;
-    for (int i = 0; i < 8; i++)
-    {
-        for (int j = 0; j < 8; j++)
-        {
-            if (board->get(side, i, j))
-            {
-                boardScore += board_weights[i][j];
-            }
-            else if (board->get(opposite, i, j))
-            {
-                boardScore -= board_weights[i][j];
-            }
-        }
-    }
-    return boardScore;
-}
+
 #endif

@@ -60,10 +60,10 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     for (int i = 0; i < 8; i++) { //Iterate through board looking for moves.
       for (int j = 0; j < 8; j++) {
         Move m(i, j);
-        if (checkMove(&m, player_side)) {
+        if (copy->checkMove(&m, player_side)) {
 
-          copy->doMove(&m); //Make the move on the copy and then evaluate it.
-          int score = getBoardScore(copy);
+          copy->doMove(&m, player_side); //Make the move on the copy and then evaluate it.
+          int score = getBoardScore(copy, player_side);
 
           if (score > bestScore) { //If the score is good, save the move.
             bestScore = score;
@@ -73,6 +73,8 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
         }
       }
     }
+
+
 
 
 
@@ -86,4 +88,40 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
       return new Move(bestX, bestY);
 
     }
-}
+  }
+
+    /**
+     * Returns a metric of the state of the board, where higher numbers are
+     * better with respect to the side given as a parameter.
+     *
+     * @param board A board pointer which references the board to be evaluated
+     * @param side The side with which the board is evaluated with respect to.
+     */
+    int Player::getBoardScore(Board * b, Side side)
+    {
+        Side opposite;
+        if (side == WHITE)
+        {
+            opposite = BLACK;
+        }
+        else
+        {
+            opposite = WHITE;
+        }
+        int boardScore = 0;
+        for (int i = 0; i < 8; i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                if (b->get(side, i, j))
+                {
+                    boardScore += board_weights[i][j];
+                }
+                else if (b->get(opposite, i, j))
+                {
+                    boardScore -= board_weights[i][j];
+                }
+            }
+        }
+        return boardScore;
+    }
