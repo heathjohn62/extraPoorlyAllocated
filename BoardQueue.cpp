@@ -1,5 +1,5 @@
 #include "BoardQueue.hpp"
-
+#include <iostream>
 
 // Constructor
 BoardQueue::BoardQueue()
@@ -15,7 +15,6 @@ void BoardQueue::init()
 {
   front = nullptr;
   rear = nullptr;
-   /* TODO: Write your initialization code here! */
 }
 
 /**
@@ -56,6 +55,7 @@ void BoardQueue::deinit()
 void BoardQueue::enqueue(BoardState * bs)
 {
     /* Do the enqueue operation. */
+    std::cerr << "Enqueueing" << std::endl;
 
   queueitem * temp = new queueitem();
   temp->bs = bs;
@@ -82,11 +82,16 @@ BoardState * BoardQueue::dequeue()
 {
     /* Do the operation. */
 
-
+    
     BoardState * bs = front->bs; // Will seg-fault if empty
 
     front = front->next;
-
+    
+    if (front->bs == nullptr)
+    {
+        std::cerr << "Warning, front is NULL" << std::endl;
+    }
+    std::cerr << "Dequeueing" << std::endl;
     return bs;
 }
 

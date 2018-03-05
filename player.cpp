@@ -52,7 +52,8 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     //First make the oponents move on our board.
     board.doMove(opponentsMove, opponent_side);
     BoardQueue * q = new BoardQueue();
-
+    
+    
     bestX = -1; // Reset our best Move spot variables.
     bestY = -1;
 
@@ -69,13 +70,13 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
           copy->doMove(&m, player_side); //Make the move on the copy and then evaluate it.
           q->enqueue(new BoardState(copy, 1, &m));
 
-
           }
         }
       }
-
+    
     BFS(31.0, q);
-
+    std::cerr << "I get here without fault" << std::endl;
+    
     if (bestX == -1 && bestY == -1) { //Indicates we have no valid moves.
 
       cerr << "PLAYER PASS" << endl;
@@ -102,15 +103,20 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     {
         BoardState * b;
         int depth = 1;
-        //int bestScore = -1000;
         int nextBestScore = -1000;
         int min_score;
         BoardState * min;
         bool initialized = false;
-        while (true)
+        
+        for (int i = 0; i < 4; i++)
         {
             b = q->dequeue();
-
+        }
+        
+        while (!q->is_empty())
+        {
+            std::cerr << "looping!" << endl;
+            b = q->dequeue();
             // This deals with enemy moves. The enemy is assumed to make the
             // best immeditate move for itself. The minimum score move from
             // each ancestor is added to the queue.
@@ -154,7 +160,6 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
                     bestY = nextBestY;
                     nextBestX = -1;
                     nextBestY = -1;
-                    //bestScore = nextBestScore;
                     nextBestScore = -1000;
                     enqueue_boardState(min, q);
                     min_score = 1000;
@@ -163,7 +168,6 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
                 {
                     break; // Program runs out of time
                 }
-
                 // Get Scores, and update if the best potential move is reached.
                 int tempScore = getBoardScore((b->board), player_side);
                 if (tempScore > nextBestScore)
@@ -175,7 +179,6 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
                 // Iterate through board looking for all possible enemy moves.
                 // Queue all enemy moves.
                 enqueue_boardState(b, q);
-
             }
         }
     }
