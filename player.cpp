@@ -75,9 +75,6 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     }
 
 
-
-
-
     if (bestX == -1 && bestY == -1) { //Indicates we have no valid moves.
 
       cerr << "PLAYER PASS" << endl;
@@ -85,7 +82,9 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
 
     } else {
       // This will tell the framework to make the best move.
-      return new Move(bestX, bestY);
+      Move * toMake = new Move(bestX, bestY);
+      board.doMove(toMake, player_side);
+      return toMake;
 
     }
   }
