@@ -1,5 +1,6 @@
 #include "player.hpp"
-
+#include <time.h>
+#include "BoardQueue.hpp"
 /*
  * Constructor for the player; initialize everything here. The side your AI is
  * on (BLACK or WHITE) is passed in as "side". The constructor must finish
@@ -46,6 +47,8 @@ Player::~Player() {
  * return nullptr.
  */
 Move *Player::doMove(Move *opponentsMove, int msLeft) {
+    
+    time(&t);
     //First make the oponents move on our board.
     board.doMove(opponentsMove, opponent_side);
 
@@ -77,8 +80,6 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     }
 
 
-
-
     if (bestX == -1 && bestY == -1) { //Indicates we have no valid moves.
 
       cerr << "PLAYER PASS" << endl;
@@ -93,7 +94,110 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
 
     }
   }
-
+    /**
+     * Performs a breadth first search of the board queue, updating the
+     * best move as it is found. 
+     * 
+     * @param limit A double describing the number of seconds remaining
+     * that the program has to calculate a move. 
+     * @param q A queue of board objects, among other relevant information. 
+     */
+    void BFS(double limit, BoardQueue q)
+    {
+        BoardState * b;
+        int depth = 1;
+        int bestScore = -1000;
+        int nextBestScore = -1000;
+        int min_score
+        BoardState min; 
+        bool initialized = false;
+        while (true)
+        {
+            b = q.dequeue();
+            
+            // This deals with enemy moves. The enemy is assumed to make the 
+            // best immeditate move for itself. The minimum score move from
+            // each ancestor is added to the queue. 
+            if (b->depth % 2 == 0)
+            {
+                // If there was an ancestor or depth change, enqueue the old min
+                // and find another min. 
+                if ((min->ancestor != b->ancestor && initialized) || (b->depth > depth))
+                {
+                    if (b->depth > depth)
+                    {
+                        depth = b->depth;
+                        min = b;
+                    }
+                    else
+                    {
+                        q.enqueue(min);//I want to enqueue all possible 
+                                       //moves that start from this board state!
+                                       // In this situtation, the player is making these moves
+                        min_score = 1000;
+                        min = b;
+                    }
+                }
+                int tempScore = getBoardScore(&(b->board), player_side);
+                if (tempScore < min_score)
+                {
+                    min = b;
+                    initialized = true;
+                }
+            }
+            // Now to deal with friendly, odd-depth moves!
+            else
+            {
+                if (b->depth > depth)
+                {
+                    //If we get to a new depth, update new bests!
+                    bestX = nextBestX;
+                    bestY = nextBestY;
+                    nextBestX = -1;
+                    nextBestY = -1;
+                    bestScore = nextBestScore;
+                    nextBestScore = -1000;
+                    min = 1000;
+                    q.enqueue(min);
+                    min_score = 1000;
+                }
+                if (difftime(time(NULL), t) > limit + 1)
+                {
+                    break; // Program runs out of time
+                }
+                
+                // Get Scores, and update if the best potential move is reached. 
+                int tempScore = getBoardScore(&(b->board), player_side);
+                if (tempScore > nextBestScore)
+                {
+                    nextBestScore = tempScore;
+                    nextBestX = (b->ancestor)->getX();
+                    nextBestY = (b->ancestor)->getY();
+                }
+                // Iterate through board looking for all possible enemy moves.
+                for (int i = 0; i < 8; i++) 
+                {
+                    for (int j = 0; j < 8; j++) 
+                    {
+                        Move m(i, j);
+                        if ((b->board).checkMove(&m, opponent_side)) 
+                        {
+                            // Create a copy of the board to avoid messing up the board.
+                            Board * copy  = (b->board).copy();
+                            // Make the move on the copy and then evaluate it.
+                            copy->doMove(&m, player_side); 
+                            
+                        }
+                    }
+                }
+                              
+            }
+        }
+    }
+    
+    
+    void enqueue_boardState(
+    
     /**
      * Returns a metric of the state of the board, where higher numbers are
      * better with respect to the side given as a parameter.
