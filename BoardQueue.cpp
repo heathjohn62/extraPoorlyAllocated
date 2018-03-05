@@ -56,21 +56,25 @@ void BoardQueue::enqueue(BoardState * bs)
 {
     /* Do the enqueue operation. */
     std::cerr << "Enqueueing" << std::endl;
-
   queueitem * temp = new queueitem();
+  std::cerr << "Pointer to enqueue: " << temp << std::endl;
   temp->bs = bs;
   if (front == nullptr) {
+    std::cerr<<"Front was null" << std::endl;
     temp->next = rear;
     front = temp;
   } else if (rear == nullptr) {
+    std::cerr<<"Rear was null" << std::endl;
     temp->next = nullptr;
     rear = temp;
     front->next = rear;
   } else {
+    std::cerr<<"Appended normally" << std::endl;
     temp->next = nullptr;
     rear->next = temp;
     rear = temp;
   }
+  std::cerr << "Front after enqueue: " << front << std::endl;
 }
 
 /**
@@ -80,18 +84,13 @@ void BoardQueue::enqueue(BoardState * bs)
  */
 BoardState * BoardQueue::dequeue()
 {
-    /* Do the operation. */
-
-    
-    BoardState * bs = front->bs; // Will seg-fault if empty
-
-    front = front->next;
-    
-    if (front->bs == nullptr)
-    {
-        std::cerr << "Warning, front is NULL" << std::endl;
-    }
     std::cerr << "Dequeueing" << std::endl;
+    BoardState * bs = front->bs; // Will seg-fault if empty
+    
+    front = front->next;
+    std::cerr <<  "Front after dequeue: " << front << std::endl;
+    
+    
     return bs;
 }
 
@@ -99,12 +98,12 @@ BoardState * BoardQueue::dequeue()
  * @brief Returns the item at the front of the queue without
  * removing it.
  *
- * @return The first Board in the queue.
+ * @return The first queueitem in the queue.
  */
-BoardState * BoardQueue::peek()
+queueitem * BoardQueue::peek()
 {
     /* TODO: Write your peek code here! */
-    return front->bs;
+    return front;
 }
 
 /**

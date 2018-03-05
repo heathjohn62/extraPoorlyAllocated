@@ -26,7 +26,6 @@ Player::Player(Side side) {
 }
 
 
-
 /*
  * Destructor for the player.
  */
@@ -62,13 +61,13 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     { //Iterate through board looking for moves.
       for (int j = 0; j < 8; j++)
       {
-        Move m(i, j);
-        if (board.checkMove(&m, player_side))
+        Move * m = new Move(i, j);
+        if (board.checkMove(m, player_side))
         {
           // Create a copy of the board to avoid messing up the board.
           Board * copy  = board.copy();
-          copy->doMove(&m, player_side); //Make the move on the copy and then evaluate it.
-          q->enqueue(new BoardState(copy, 1, &m));
+          copy->doMove(m, player_side); //Make the move on the copy and then evaluate it.
+          q->enqueue(new BoardState(copy, 1, m));
 
           }
         }
@@ -101,22 +100,16 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
      */
     void Player::BFS(double limit, BoardQueue * q)
     {
-        BoardState * b;
         int depth = 1;
         int nextBestScore = -1000;
         int min_score;
         BoardState * min;
         bool initialized = false;
         
-        for (int i = 0; i < 4; i++)
-        {
-            b = q->dequeue();
-        }
-        
-        while (!q->is_empty())
+        while (true)
         {
             std::cerr << "looping!" << endl;
-            b = q->dequeue();
+            BoardState * b = q->dequeue();
             // This deals with enemy moves. The enemy is assumed to make the
             // best immeditate move for itself. The minimum score move from
             // each ancestor is added to the queue.
@@ -137,6 +130,7 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
                         // from this board state!
                         enqueue_boardState(min, q);
                         // In this situtation, the player is making these moves
+                        delete min;
 
                         min_score = 1000;
                         min = b;
@@ -170,19 +164,29 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
                 }
                 // Get Scores, and update if the best potential move is reached.
                 int tempScore = getBoardScore((b->board), player_side);
+                std::cerr<<"Front before resetting scores: " << q->peek() << endl;
                 if (tempScore > nextBestScore)
                 {
                     nextBestScore = tempScore;
-                    nextBestX = (b->ancestor)->getX();
                     nextBestY = (b->ancestor)->getY();
+                    std::cerr<<"nextBestY: " << nextBestY << std::endl;
+                    std::cerr<<"Front: " << q->peek() << std::endl;
+                    nextBestX = (b->ancestor)->getX();
+                    std::cerr<<"nextBestX: " << nextBestX << std::endl;
+                    std::cerr<<"Front: " << q->peek() << std::endl;
+                    
                 }
+                std::cerr<<"Front after resetting scores: " << q->peek() << endl;
                 // Iterate through board looking for all possible enemy moves.
                 // Queue all enemy moves.
                 enqueue_boardState(b, q);
+                if (min != b)
+                {
+                    delete b;
+                }
             }
         }
     }
-
 
 
 
@@ -230,4 +234,27 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
             }
         }
         return boardScore;
+    }
+
+    void Player::enqueue_boardState(BoardState * bs, BoardQueue * q) 
+    {
+      int n_depth = (bs->depth) + 1;
+      Side n_side = (n_depth % 2 == 0) ? BLACK : WHITE;
+      Move * anc = bs->ancestor;
+      Board * old = bs->board;
+
+      for (int i = 0; i < 8; i++) 
+      {
+        for (int j = 0; j < 8; j++) 
+        {
+          Move * m = new Move(i, j);
+          if (old->checkMove(m, n_side)) 
+          {
+            Board * copy  = old->copy();
+            copy->doMove(m, n_side); //Make the move on the copy and then evaluate it.
+            BoardState * to_queue = new BoardState(copy, n_depth, anc);
+            q->enqueue(to_queue);
+          }
+        }
+      }
     }

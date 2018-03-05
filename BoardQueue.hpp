@@ -39,7 +39,7 @@ public:
 
     void enqueue(BoardState * bs);
     BoardState * dequeue();
-    BoardState * peek();
+    queueitem * peek();
     bool is_empty();
 
 private:

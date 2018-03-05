@@ -31,26 +31,10 @@ public:
   private:
     int getBoardScore(Board * b, Side side);
     void BFS(double limit, BoardQueue * q);
+    void enqueue_boardState(BoardState * bs, BoardQueue * q);
 
 
-    void enqueue_boardState(BoardState * bs, BoardQueue * q) {
-
-      int n_depth = (bs->depth) + 1;
-      Side n_side = (n_depth % 2 == 0) ? BLACK : WHITE;
-      Move * anc = bs->ancestor;
-      Board * old = bs->board;
-
-      for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
-          Move m(i, j);
-          if (old->checkMove(&m, n_side)) {
-            Board * copy  = old->copy();
-            copy->doMove(&m, n_side); //Make the move on the copy and then evaluate it.
-            q->enqueue(new BoardState(copy, n_depth, anc));
-          }
-        }
-      }
-    }
+    
 
 };
 
