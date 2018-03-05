@@ -32,7 +32,7 @@ public:
     void BFS(double limit, BoardQueue &q);
 
 
-    void enqueue_boardState(BoardState * bs, BoardQueue &q) {
+    void enqueue_boardState(BoardState * bs, BoardQueue * q) {
 
       int n_depth = (bs->depth) + 1;
       Side n_side = (n_depth & 2 == 0) ? BLACK : WHITE;
