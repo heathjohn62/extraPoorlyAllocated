@@ -1,3 +1,6 @@
+#ifndef Board_Queue_H
+#define Board_Queue_H
+
 #include "common.hpp"
 #include "board.hpp"
 
@@ -5,12 +8,12 @@
 
 struct BoardState {
 
-  Board * b;
+  Board * board;
   int depth;
   Move * ancestor;
 
   BoardState(Board * bo, int de, Move * anc) {
-    b = bo;
+    board = bo;
     depth = de;
     ancestor = anc;
   }
@@ -47,3 +50,4 @@ private:
     void do_enqueue(BoardState bs);
     BoardState do_dequeue();
 };
+#endif

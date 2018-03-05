@@ -83,7 +83,7 @@ BoardState * BoardQueue::dequeue()
     /* Do the operation. */
 
 
-    Board bs = front->bs; // Will seg-fault if empty
+    BoardState * bs = front->bs; // Will seg-fault if empty
 
     front = front->next;
 
