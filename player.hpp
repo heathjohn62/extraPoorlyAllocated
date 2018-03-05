@@ -18,7 +18,14 @@ public:
     int bestX = -1;
     int bestY = -1;
 
-    int board_weights[8][8]=
+    
+    Move *doMove(Move *opponentsMove, int msLeft);
+
+    // Flag to tell if the player is running within the test_minimax context
+    bool testingMinimax;
+};
+
+static int board_weights[8][8]=
     {{20, -3, 1, 1, 1, 1, -3, 20},
      {-3, -5, 1, 1, 1, 1, -5, -3},
      { 4,  1, 1, 1, 1, 1,  1,  4},
@@ -27,13 +34,8 @@ public:
      { 4,  1, 1, 1, 1, 1,  1,  4},
      {-3, -5, 1, 1, 1, 1, -5, -3},
      {20, -3, 1, 1, 1, 1, -3, 20}};
-    Move *doMove(Move *opponentsMove, int msLeft);
 
-    // Flag to tell if the player is running within the test_minimax context
-    bool testingMinimax;
-};
 
-#endif
 
 /**
  * Returns a metric of the state of the board, where higher numbers are
@@ -58,11 +60,11 @@ int getBoardScore(Board * board, Side side)
     {
         for (int j = 0; j < 8; j++)
         {
-            if (board.get(side, i, j))
+            if (board->get(side, i, j))
             {
                 boardScore += board_weights[i][j];
             }
-            else if (board.get(opposite, i, j))
+            else if (board->get(opposite, i, j))
             {
                 boardScore -= board_weights[i][j];
             }
@@ -70,3 +72,4 @@ int getBoardScore(Board * board, Side side)
     }
     return boardScore;
 }
+#endif
