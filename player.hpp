@@ -7,6 +7,10 @@
 #include "BoardQueue.hpp"
 using namespace std;
 
+//Change this define to true to do BFS, otherwise will do recursively
+#define DOING_BFS true
+#define MAX_DEPTH 4
+
 class Player {
 
 public:
@@ -16,9 +20,10 @@ public:
     Side player_side;
     Side opponent_side;
     time_t t;
-    
-    
 
+    //Alex's global variables.
+    int to_move_x;
+    int to_move_y;
 
     Move *doMove(Move *opponentsMove, int msLeft);
 
@@ -30,8 +35,9 @@ public:
     int * BFS(double limit, BoardQueue * q);
     void enqueue_boardState(BoardState * bs, BoardQueue * q);
 
+    //Alex's
+    int recursiveMoveFind(Board * b, int depth);
 
-    
 
 };
 

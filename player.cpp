@@ -45,10 +45,13 @@ Player::~Player() {
  * The move returned must be legal; if there are no valid moves for your side,
  * return nullptr.
  */
-Move *Player::doMove(Move *opponentsMove, int msLeft) 
+Move *Player::doMove(Move *opponentsMove, int msLeft)
 {
-    //First make the oponents move on our board.
-    board.doMove(opponentsMove, opponent_side);
+  //First make the oponents move on our board.
+  board.doMove(opponentsMove, opponent_side);
+
+  if (DOING_BFS) {
+
     BoardQueue * q = new BoardQueue();
 
     int valid_moves = 0;
@@ -84,13 +87,13 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
         bestY = best[1];
         delete[] best;
     }
-    
-    if (bestX == -1 && bestY == -1) 
-    { 
+
+    if (bestX == -1 && bestY == -1)
+    {
       //Indicates we have no valid moves.
       return nullptr;
-    } 
-    else 
+    }
+    else
     {
 
       // This will tell the framework to make the best move.
@@ -99,7 +102,21 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
       return toMake;
 
     }
+  } else { //If not doing BFS
+    to_move_x = -1;
+    to_move_y = -1;
+
+    recursiveMoveFind(board.copy(), 0);
+
+    if (to_move_x == -1 && to_move_y == -1) {
+      return nullptr;
+    } else {
+      Move * to_move = new Move(to_move_x, to_move_y);
+      board.doMove(to_move, player_side);
+      return to_move;
+    }
   }
+}
 /**
  * Performs a breadth first search of the board queue, updating the
  * best move as it is found.
@@ -238,15 +255,7 @@ int * Player::BFS(double limit, BoardQueue * q)
            { 10,  2, 2, 2, 2, 2,  2,  10},
            {-30, -40, 2, 2, 2, 2, -40, -30},
            {120, -30, 10, 10, 10, 10, -30, 120}};
-        Side opposite;
-        if (side == WHITE)
-        {
-            opposite = BLACK;
-        }
-        else
-        {
-            opposite = WHITE;
-        }
+        Side opposite = (side == WHITE) ? BLACK : WHITE;
         int boardScore = 0;
         for (int i = 0; i < 8; i++)
         {
@@ -265,19 +274,19 @@ int * Player::BFS(double limit, BoardQueue * q)
         return boardScore;
     }
 
-    void Player::enqueue_boardState(BoardState * bs, BoardQueue * q) 
+    void Player::enqueue_boardState(BoardState * bs, BoardQueue * q)
     {
       int n_depth = (bs->depth) + 1;
       Side n_side = (n_depth % 2 == 0) ? opponent_side : player_side;
       Move * anc = bs->ancestor;
       Board * old = bs->board;
 
-      for (int i = 0; i < 8; i++) 
+      for (int i = 0; i < 8; i++)
       {
-        for (int j = 0; j < 8; j++) 
+        for (int j = 0; j < 8; j++)
         {
           Move * m = new Move(i, j);
-          if (old->checkMove(m, n_side)) 
+          if (old->checkMove(m, n_side))
           {
             Board * copy  = old->copy();
             copy->doMove(m, n_side); //Make the move on the copy and then evaluate it.
@@ -286,4 +295,37 @@ int * Player::BFS(double limit, BoardQueue * q)
           }
         }
       }
+    }
+
+
+
+    int Player::recursiveMoveFind(Board *b, int depth) {
+      Side curr = (depth % 2 == 0) ? player_side : opponent_side;
+      
+      if (depth == MAX_DEPTH) {
+        return getBoardScore(b, curr);
+      }
+      bool no_scores = true;
+      int best_score;
+      for(int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+          Move potential(i, j);
+          if (b->checkMove(&potential, curr)) {
+            Board * copy = b->copy();
+            copy->doMove(&potential, curr);
+
+            int score = recursiveMoveFind(copy, depth + 1);
+            if (no_scores || score > best_score) {
+              no_scores = false;
+              best_score = score;
+              if (depth == 0) {
+                to_move_x = potential.x;
+                to_move_y = potential.y;
+              }
+            }
+            delete(copy);
+          }
+        }
+      }
+      return best_score;
     }
