@@ -31,7 +31,6 @@ Player::Player(Side side) {
  */
 Player::~Player() {
 }
-
 /*
  * Compute the next move given the opponent's last move. Your AI is
  * expected to keep track of the board on its own. If this is the first move,
@@ -301,7 +300,7 @@ int * Player::BFS(double limit, BoardQueue * q)
 
     int Player::recursiveMoveFind(Board *b, int depth) {
       Side curr = (depth % 2 == 0) ? player_side : opponent_side;
-      
+
       if (depth == MAX_DEPTH) {
         return getBoardScore(b, curr);
       }
