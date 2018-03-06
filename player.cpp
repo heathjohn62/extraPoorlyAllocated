@@ -45,18 +45,13 @@ Player::~Player() {
  * The move returned must be legal; if there are no valid moves for your side,
  * return nullptr.
  */
-Move *Player::doMove(Move *opponentsMove, int msLeft) {
-
-    time(&t);
+Move *Player::doMove(Move *opponentsMove, int msLeft) 
+{
     //First make the oponents move on our board.
     board.doMove(opponentsMove, opponent_side);
     BoardQueue * q = new BoardQueue();
-    
-    
-    bestX = -1; // Reset our best Move spot variables.
-    bestY = -1;
 
-
+    int valid_moves = 0;
     for (int i = 0; i < 8; i++)
     { //Iterate through board looking for moves.
       for (int j = 0; j < 8; j++)
@@ -64,6 +59,7 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
         Move * m = new Move(i, j);
         if (board.checkMove(m, player_side))
         {
+          valid_moves++;
           // Create a copy of the board to avoid messing up the board.
           Board * copy  = board.copy();
           copy->doMove(m, player_side); //Make the move on the copy and then evaluate it.
@@ -72,16 +68,30 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
           }
         }
       }
+    int bestX = -1;
+    int bestY = -1;
+    if (valid_moves == 1)
+    {
+        BoardState * bs = q->dequeue();
+        bestX = bs->ancestor->getX();
+        bestY = bs->ancestor->getY();
+        delete bs;
+    }
+    else if (valid_moves > 1)
+    {
+        int * best = BFS(31.0, q);
+        bestX = best[0];
+        bestY = best[1];
+        delete[] best;
+    }
     
-    BFS(31.0, q);
-    std::cerr << "I get here without fault" << std::endl;
-    
-    if (bestX == -1 && bestY == -1) { //Indicates we have no valid moves.
-
-      cerr << "PLAYER PASS" << endl;
+    if (bestX == -1 && bestY == -1) 
+    { 
+      //Indicates we have no valid moves.
       return nullptr;
-
-    } else {
+    } 
+    else 
+    {
 
       // This will tell the framework to make the best move.
       Move * toMake = new Move(bestX, bestY);
@@ -90,103 +100,122 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
 
     }
   }
-    /**
-     * Performs a breadth first search of the board queue, updating the
-     * best move as it is found.
-     *
-     * @param limit A double describing the number of seconds remaining
-     * that the program has to calculate a move.
-     * @param q A queue of board objects, among other relevant information.
-     */
-    void Player::BFS(double limit, BoardQueue * q)
+/**
+ * Performs a breadth first search of the board queue, updating the
+ * best move as it is found.
+ *
+ * @param limit A double describing the number of seconds remaining
+ * that the program has to calculate a move.
+ * @param q A queue of board objects, among other relevant information.
+ */
+int * Player::BFS(double limit, BoardQueue * q)
+{
+    time(&t);
+    int depth = 1;
+    int nextBestScore = -1000;
+    int min_score = 1000;
+    BoardState * min;
+    bool initialized = false;
+    int bestX = -1;
+    int bestY = -1;
+    int nextBestY = -1;
+    int nextBestX = -1;
+    while (q->peek())
     {
-        int depth = 1;
-        int nextBestScore = -1000;
-        int min_score;
-        BoardState * min;
-        bool initialized = false;
-        
-        while (true)
+        BoardState * b = q->dequeue();
+        if (b->depth == 0)
         {
-            std::cerr << "looping!" << endl;
-            BoardState * b = q->dequeue();
-            // This deals with enemy moves. The enemy is assumed to make the
-            // best immeditate move for itself. The minimum score move from
-            // each ancestor is added to the queue.
-            if (b->depth % 2 == 0)
+            // A little unsure why this works, or why this might happen
+            break;
+        }
+        if (b->depth > depth)
+        {
+            depth = b->depth;
+            if (depth % 2 == 0)
             {
-                // If there was an ancestor or depth change, enqueue the old min
-                // and find another min.
-                if ((min->ancestor != b->ancestor && initialized) || (b->depth > depth))
-                {
-                    if (b->depth > depth)
-                    {
-                        depth = b->depth;
-                        min = b;
-                    }
-                    else
-                    {
-                        // I want to enqueue all possible moves that start
-                        // from this board state!
-                        enqueue_boardState(min, q);
-                        // In this situtation, the player is making these moves
-                        delete min;
-
-                        min_score = 1000;
-                        min = b;
-                    }
-                }
-                int tempScore = getBoardScore((b->board), player_side);
-                if (tempScore < min_score)
-                {
-                    min = b;
-                    min_score = tempScore;
-                    initialized = true;
-                }
+                //If we get to a new depth, update new bests!
+                bestX = nextBestX;
+                bestY = nextBestY;
+                nextBestX = -1;
+                nextBestY = -1;
+                nextBestScore = -1000;
+                min_score = 1000;
             }
-            // Now to deal with friendly, odd-depth moves!
             else
             {
-                if (b->depth > depth)
-                {
-                    //If we get to a new depth, update new bests!
-                    bestX = nextBestX;
-                    bestY = nextBestY;
-                    nextBestX = -1;
-                    nextBestY = -1;
-                    nextBestScore = -1000;
-                    enqueue_boardState(min, q);
-                    min_score = 1000;
-                }
-                if (difftime(time(NULL), t) > limit + 1)
-                {
-                    break; // Program runs out of time
-                }
-                // Get Scores, and update if the best potential move is reached.
-                int tempScore = getBoardScore((b->board), player_side);
-                std::cerr<<"Front before resetting scores: " << q->peek() << endl;
-                if (tempScore > nextBestScore)
-                {
-                    nextBestScore = tempScore;
-                    nextBestY = (b->ancestor)->getY();
-                    std::cerr<<"nextBestY: " << nextBestY << std::endl;
-                    std::cerr<<"Front: " << q->peek() << std::endl;
-                    nextBestX = (b->ancestor)->getX();
-                    std::cerr<<"nextBestX: " << nextBestX << std::endl;
-                    std::cerr<<"Front: " << q->peek() << std::endl;
-                    
-                }
-                std::cerr<<"Front after resetting scores: " << q->peek() << endl;
-                // Iterate through board looking for all possible enemy moves.
-                // Queue all enemy moves.
-                enqueue_boardState(b, q);
-                if (min != b)
-                {
-                    delete b;
-                }
+                enqueue_boardState(min, q);
+                delete min;
+                initialized = false;
+            }
+        }
+        // This deals with enemy moves. The enemy is assumed to make the
+        // best immeditate move for itself. The minimum score move from
+        // each ancestor is added to the queue.
+        if (depth % 2 == 0)
+        {
+            // If there was an ancestor or depth change, enqueue the old min
+            // and find another min.
+            if (initialized && min->ancestor != b->ancestor)
+            {
+                // I want to enqueue all possible moves that start
+                // from this board state!
+                enqueue_boardState(min, q);
+                // In this situtation, the player is making these moves
+                delete min;
+                min_score = 1000;
+                min = b;
+            }
+            int tempScore = getBoardScore((b->board), player_side);
+            if (tempScore < min_score)
+            {
+                min = b;
+                min_score = tempScore;
+                initialized = true;
+            }
+        }
+        // Now to deal with friendly, odd-depth moves!
+        else
+        {
+            if (difftime(time(NULL), t) > limit + 1)
+            {
+                break; // Program runs out of time
+            }
+            if (q->peek() == 0)
+            {
+                break;
+            }
+            // Get Scores, and update if the best potential move is reached.
+            int tempScore = getBoardScore((b->board), player_side);
+            if (tempScore > nextBestScore)
+            {
+                nextBestScore = tempScore;
+                nextBestX = b->ancestor->getX();
+                nextBestY = b->ancestor->getY();
+            }
+            // Iterate through board looking for all possible enemy moves.
+            // Queue all enemy moves.
+            enqueue_boardState(b, q);
+            if (min != b)
+            {
+                delete b;
             }
         }
     }
+    if (depth > 1 || depth == 0)
+    {
+        int * a = new int[2];
+        a[0] = bestX;
+        a[1] = bestY;
+        return a;
+    }
+    else
+    {
+        int * a = new int[2];
+        a[0] = nextBestX;
+        a[1] = nextBestY;
+        return a;
+    }
+}
 
 
 
@@ -201,14 +230,14 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     int Player::getBoardScore(Board * b, Side side)
     {
       int board_weights[8][8]=
-          {{20, -3, 4, 4, 4, 4, -3, 20},
-           {-3, -5, 1, 1, 1, 1, -5, -3},
-           { 4,  1, 1, 1, 1, 1,  1,  4},
-           { 4,  1, 1, 1, 1, 1,  1,  4},
-           { 4,  1, 1, 1, 1, 1,  1,  4},
-           { 4,  1, 1, 1, 1, 1,  1,  4},
-           {-3, -5, 1, 1, 1, 1, -5, -3},
-           {20, -3, 4, 4, 4, 4, -3, 20}};
+          {{120, -30, 10, 10, 10, 10, -30, 120},
+           {-30, -40, 2, 2, 2, 2, -40, -20},
+           { 10,  2, 2, 2, 2, 2,  2,  30},
+           { 10,  2, 2, 2, 2, 2,  2,  10},
+           { 10,  2, 2, 2, 2, 2,  2,  10},
+           { 10,  2, 2, 2, 2, 2,  2,  10},
+           {-30, -40, 2, 2, 2, 2, -40, -30},
+           {120, -30, 10, 10, 10, 10, -30, 120}};
         Side opposite;
         if (side == WHITE)
         {
@@ -239,7 +268,7 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     void Player::enqueue_boardState(BoardState * bs, BoardQueue * q) 
     {
       int n_depth = (bs->depth) + 1;
-      Side n_side = (n_depth % 2 == 0) ? BLACK : WHITE;
+      Side n_side = (n_depth % 2 == 0) ? opponent_side : player_side;
       Move * anc = bs->ancestor;
       Board * old = bs->board;
 

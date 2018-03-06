@@ -54,27 +54,20 @@ void BoardQueue::deinit()
  */
 void BoardQueue::enqueue(BoardState * bs)
 {
-    /* Do the enqueue operation. */
-    std::cerr << "Enqueueing" << std::endl;
   queueitem * temp = new queueitem();
-  std::cerr << "Pointer to enqueue: " << temp << std::endl;
   temp->bs = bs;
   if (front == nullptr) {
-    std::cerr<<"Front was null" << std::endl;
     temp->next = rear;
     front = temp;
   } else if (rear == nullptr) {
-    std::cerr<<"Rear was null" << std::endl;
     temp->next = nullptr;
     rear = temp;
     front->next = rear;
   } else {
-    std::cerr<<"Appended normally" << std::endl;
     temp->next = nullptr;
     rear->next = temp;
     rear = temp;
   }
-  std::cerr << "Front after enqueue: " << front << std::endl;
 }
 
 /**
@@ -84,13 +77,8 @@ void BoardQueue::enqueue(BoardState * bs)
  */
 BoardState * BoardQueue::dequeue()
 {
-    std::cerr << "Dequeueing" << std::endl;
     BoardState * bs = front->bs; // Will seg-fault if empty
-    
     front = front->next;
-    std::cerr <<  "Front after dequeue: " << front << std::endl;
-    
-    
     return bs;
 }
 
@@ -102,7 +90,6 @@ BoardState * BoardQueue::dequeue()
  */
 queueitem * BoardQueue::peek()
 {
-    /* TODO: Write your peek code here! */
     return front;
 }
 
@@ -113,8 +100,6 @@ queueitem * BoardQueue::peek()
  */
 bool BoardQueue::is_empty()
 {
-    /* TODO: Is the queue empty??? */
-
     bool b = (front == nullptr && rear == nullptr);
     return b;
 }
