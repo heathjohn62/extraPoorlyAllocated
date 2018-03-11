@@ -17,6 +17,11 @@ struct BoardState {
     depth = de;
     ancestor = anc;
   }
+
+  ~BoardState() {
+    delete(board);
+    delete(ancestor);
+  }
 };
 /**
  * @brief Simple queue item for Board objects.

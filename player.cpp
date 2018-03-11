@@ -246,14 +246,14 @@ int * Player::BFS(double limit, BoardQueue * q)
     int Player::getBoardScore(Board * b, Side side)
     {
       int board_weights[8][8]=
-          {{120, -30, 10, 10, 10, 10, -30, 120},
-           {-30, -40, 2, 2, 2, 2, -40, -20},
-           { 10,  2, 2, 2, 2, 2,  2,  30},
+          {{200, -50, 10, 5, 5, 10, -50, 200},
+           {-50, -50, 2, 2, 2, 2, -50, -50},
            { 10,  2, 2, 2, 2, 2,  2,  10},
+           { 5,  2, 2, 2, 2, 2,  2,  5},
+           { 5,  2, 2, 2, 2, 2,  2,  5},
            { 10,  2, 2, 2, 2, 2,  2,  10},
-           { 10,  2, 2, 2, 2, 2,  2,  10},
-           {-30, -40, 2, 2, 2, 2, -40, -30},
-           {120, -30, 10, 10, 10, 10, -30, 120}};
+           {-50, -50, 2, 2, 2, 2, -50, -50},
+           {200, -50, 10, 5, 5, 10, -50, 200}};
         Side opposite = (side == WHITE) ? BLACK : WHITE;
         int boardScore = 0;
         for (int i = 0; i < 8; i++)
@@ -302,10 +302,14 @@ int * Player::BFS(double limit, BoardQueue * q)
       Side curr = (depth % 2 == 0) ? player_side : opponent_side;
 
       if (depth == MAX_DEPTH) {
-        return getBoardScore(b, curr);
+        if (MAX_DEPTH % 2 == 0) {
+          return -1 * getBoardScore(b, curr);
+        } else {
+          return getBoardScore(b, curr);
+        }
       }
       bool no_scores = true;
-      int best_score;
+      int best_score = -10000;
       for(int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
           Move potential(i, j);
@@ -314,6 +318,9 @@ int * Player::BFS(double limit, BoardQueue * q)
             copy->doMove(&potential, curr);
 
             int score = recursiveMoveFind(copy, depth + 1);
+            if (curr == player_side) {
+              score *= -1;
+            }
             if (no_scores || score > best_score) {
               no_scores = false;
               best_score = score;
@@ -325,6 +332,9 @@ int * Player::BFS(double limit, BoardQueue * q)
             delete(copy);
           }
         }
+      }
+      if (curr == player_side) {
+        best_score *= -1;
       }
       return best_score;
     }
