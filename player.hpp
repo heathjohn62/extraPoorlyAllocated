@@ -9,7 +9,7 @@ using namespace std;
 
 //Change this define to true to do BFS, otherwise will do recursively
 #define DOING_BFS false
-#define MAX_DEPTH 6
+#define MAX_DEPTH 5
 
 class Player {
 

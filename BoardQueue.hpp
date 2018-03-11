@@ -18,10 +18,10 @@ struct BoardState {
     ancestor = anc;
   }
 
-  ~BoardState() {
-    delete(board);
-    delete(ancestor);
-  }
+//  ~BoardState() {
+    //delete(board);
+    //delete(ancestor);
+ // }
 };
 /**
  * @brief Simple queue item for Board objects.
