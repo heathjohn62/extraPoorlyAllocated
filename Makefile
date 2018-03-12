@@ -1,7 +1,7 @@
 CC          = g++
-CFLAGS      = -std=c++11 -Wall -pedantic  -O2
+CFLAGS      = -std=c++11 -Wall -pedantic  -O3
 OBJS        = player.o board.o BoardQueue.o
-PLAYERNAME  = player
+PLAYERNAME  = PoorlyAllocated
 
 all: $(PLAYERNAME) testgame
 

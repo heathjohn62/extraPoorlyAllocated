@@ -23,11 +23,13 @@ public:
     bool isDone();
     bool get(Side side, int x, int y);
     bool hasMoves(Side side);
+    int int_hasMoves(Side side);
     bool checkMove(Move *m, Side side);
     void doMove(Move *m, Side side);
     int count(Side side);
     int countBlack();
     int countWhite();
+    int countTotal();
 
     void setBoard(char data[]);
 };
