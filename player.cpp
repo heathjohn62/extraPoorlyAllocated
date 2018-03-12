@@ -112,11 +112,11 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
     alpha = -10000;
     beta = 10000;
     recursiveMoveFind(board.copy(), 0, player_side);
-    cerr << "Current Move: " << move_num << endl;
+    //cerr << "Current Move: " << move_num << endl;
     move_num++;
     if (move_num > 30) {
       cerr << "Time Taken: " << (difftime(time(NULL), t)) << " sec"<< endl;
-      cerr << "Prunes: " << prunes << endl;
+      //cerr << "Prunes: " << prunes << endl;
     }
     //cerr << "MS LEFT: " << msLeft << " ms" << endl;
     if (to_move_x == -1 && to_move_y == -1) {
@@ -260,7 +260,15 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
      {
        Side opposite = (side == WHITE) ? BLACK : WHITE;
        if (b->countTotal() > 62) {
+
          return b->count(side) - b->count(opposite);
+         /*
+         This solves the board, but will only do it at a depth of MAX_DEPTH +
+         EXTEND, which is cool bc this is a quick calculation so we can go deeper
+         faster, and this will guarantee we WIN if it is forcibly possible at a
+         depth of MAX_DEPTH + EXTEND.
+
+         */
        } else {
 
          int boardScore = 0;
@@ -312,7 +320,9 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
 
     int Player::recursiveMoveFind(Board *b, int depth, Side curr) {
 
-      if (depth == MAX_DEPTH) {
+      if ((depth == MAX_DEPTH && b->countTotal() < 64 - EXTEND )||
+                      b->countTotal() == 64) {
+        //if (depth > MAX_DEPTH) cerr << "!!!" << depth << endl;
         if (MAX_DEPTH % 2 == 0) {
           return -1 * getBoardScore(b, curr);
         } else {
@@ -340,7 +350,7 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
               alpha = alpha < score ? alpha : score; //MINIMIZE BETA
             }
             if (beta <= alpha && depth != 0) {
-              prunes += pow(7, (MAX_DEPTH - depth));
+              //prunes += pow(7, (MAX_DEPTH - depth));
               we_should_break = true;
               break; //Don't search this move, prune the tree.
             }

@@ -10,6 +10,7 @@ using namespace std;
 //Change this define to true to do BFS, otherwise will do recursively
 #define DOING_BFS false
 #define MAX_DEPTH 6
+#define EXTEND (16 - MAX_DEPTH) //EXTRA DEPTH FOR ENDGAME, VERY GOOD FOR SOLVING THESE ENDGAMES
 
 class Player {
 
@@ -27,7 +28,7 @@ public:
     int to_move_y;
     int alpha; //For alpha-beta pruning.
     int beta;
-    int prunes = 0;
+    //int prunes = 0;
     Move *doMove(Move *opponentsMove, int msLeft);
 
     // Flag to tell if the player is running within the test_minimax context
