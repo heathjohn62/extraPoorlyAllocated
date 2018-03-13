@@ -2,6 +2,7 @@
 #include <time.h>
 #include "BoardQueue.hpp"
 #include <math.h>
+
 /*
  * Constructor for the player; initialize everything here. The side your AI is
  * on (BLACK or WHITE) is passed in as "side". The constructor must finish
@@ -11,6 +12,7 @@ Player::Player(Side side) {
     // Will be set to true in test_minimax.cpp.
     testingMinimax = false;
     player_side = side;
+    srand (time(NULL));
     if (side == WHITE)
     {
         opponent_side = BLACK;
@@ -19,12 +21,30 @@ Player::Player(Side side) {
     {
         opponent_side = WHITE;
     }
-
-    /*
-     * TODO: Do any initialization you need to do here (setting up the board,
-     * precalculating things, etc.) However, remember that you will only have
-     * 30 seconds.
-     */
+     cerr << "GOING IN" << endl;
+    for(int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        for (int k = 0; k < 3; k++) {
+          for (int l = 0; l < 3; l++) {
+            for (int m = 0; m < 3; m++) {
+              for (int n = 0; n < 3; n++) {
+                for (int o = 0; o < 3; o++) {
+                  for (int p = 0; p < 3; p++) {
+                    //cerr << "NESTED FOR" << endl;
+                    string key = getString(i,j,k,l,m,n,o,p);
+                    string val = get_stability(key);
+                    //cerr << key << " " << endl;
+                    edge_combos[key] = val;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    unordered_map<string,string>::const_iterator got = edge_combos.find("wwb-b-w-");
+    cerr << got->first << " is " << got->second << endl;
 }
 
 
@@ -50,7 +70,6 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
 {
   //First make the oponents move on our board.
   board.doMove(opponentsMove, opponent_side);
-
   // if (DOING_BFS) {
   //
   //   BoardQueue * q = new BoardQueue();
@@ -109,8 +128,11 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
     }
     to_move_x = -1;
     to_move_y = -1;
-    alpha = -10000;
-    beta = 10000;
+    alpha = -100000;
+    beta = 100000;
+    if (board.countTotal() == 49 || board.countTotal() == 48) {
+      cerr << "White Pieces going into endgame: " << board.countWhite() << endl;
+    }
     recursiveMoveFind(board.copy(), 0, player_side);
     //cerr << "Current Move: " << move_num << endl;
     move_num++;
@@ -120,6 +142,7 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
     }
     //cerr << "MS LEFT: " << msLeft << " ms" << endl;
     if (to_move_x == -1 && to_move_y == -1) {
+      cerr << "PLayer Pass" << endl;
       return nullptr;
     } else {
       Move * to_move = new Move(to_move_x, to_move_y);
@@ -246,8 +269,75 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
 //     }
 // }
 
+  string indivStability(int i, string key) {
+    string col = key.substr(i, 1);
+    if (col.compare(BLANK) != 0) {
+      string opp = (col.compare(BLACK_COL) == 0) ? WHITE_COL : BLACK_COL;
+      bool isBlankRight = false;
+      bool isBlankLeft = false;
+      bool isOppRight = false;
+      bool isOppLeft = false;
+      int closestBlankLeft = -1;
+      int closestBlankRight = 9;
+      int closestOppLeft = -1;
+      int closestOppRight = 9;
+      for (int j = 0; j < 8 ; j++) {
+        if (j== i) continue;
+        string temp = key.substr(j, 1);
+        if (j < i && temp.compare(BLANK) == 0) {
+          isBlankLeft = true;
+          closestBlankLeft = j;
+        } else if (j > i && temp.compare(BLANK) == 0) {
+          isBlankRight = true;
+          if (closestBlankRight == 9) {
+            closestBlankRight = j;
+          }
+        } else if (j < i && opp.compare(temp) == 0) {
+          isOppLeft = true;
+          closestOppLeft = j;
+        } else if (j > i && opp.compare(temp) == 0) {
+          isOppRight = true;
+          if (closestOppRight == 9) {
+            closestOppRight = j;
+          }
+        }
+      }
+      if (!((isBlankRight && isOppLeft) || (isBlankLeft && isOppRight))
+        || (!isBlankLeft && !isBlankRight)) {
+        return STABLE;
+      } else {
+        if ((closestBlankLeft > closestOppLeft && closestBlankRight < closestOppRight)
+              || (closestOppLeft > closestBlankLeft && closestOppRight < closestOppLeft)) {
+              return SEMI_STABLE; //Not ideal, but not bad either
+        }
+        return UNSTABLE;
+      }
+    } else { //Find stability for blank squares (may just return SEMI_STABLE)
+       return SEMI_STABLE;
+    }
+  }
+
+  string Player::get_stability(string key) {
+    string ret = STABLE; //corner will be stable.
+    for (int i = 1; i < 7; i++) {
+      ret.append(indivStability(i, key));
+    }
+
+    ret.append(STABLE); //Other corner will also be stable
+    return ret;
+  }
 
 
+  int esac(int move_num) {
+    return 300 + 6 * move_num;
+  }
+  int cmac(int move_num) {
+    if (move_num <= 25) {
+      return 50 + (2 * move_num);
+    } else {
+      return 75 + move_num;
+    }
+  }
 
     /**
      * Returns a metric of the state of the board, where higher numbers are
@@ -256,11 +346,10 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
      * @param board A board pointer which references the board to be evaluated
      * @param side The side with which the board is evaluated with respect to.
      */
-     int Player::getBoardScore(Board * b, Side side)
+     int Player::getBoardScore(Board * b, Side side, int oppMoves)
      {
        Side opposite = (side == WHITE) ? BLACK : WHITE;
-       if (b->countTotal() > 62) {
-
+       if (b->countTotal() == 64) {
          return b->count(side) - b->count(opposite);
          /*
          This solves the board, but will only do it at a depth of MAX_DEPTH +
@@ -320,17 +409,17 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
 
     int Player::recursiveMoveFind(Board *b, int depth, Side curr) {
 
-      if ((depth == MAX_DEPTH && b->countTotal() < 64 - EXTEND )||
-                      b->countTotal() == 64) {
+      if ((depth == MAX_DEPTH && b->countTotal() < 64 - EXTEND) || (b->countTotal() == 64)) {
         //if (depth > MAX_DEPTH) cerr << "!!!" << depth << endl;
-        if (MAX_DEPTH % 2 == 0) {
-          return -1 * getBoardScore(b, curr);
+        int oppMoves = 0;//b->int_hasMoves();
+        if (depth % 2 == 0) {
+          return -1 * getBoardScore(b, curr, oppMoves);
         } else {
-          return getBoardScore(b, curr);
+          return getBoardScore(b, curr, oppMoves);
         }
       }
       bool no_scores = true;
-      int best_score = -10000;
+      int best_score = -100000;
       for(int i = 0; i < 8; i++) {
         bool we_should_break = false;
         for (int j = 0; j < 8; j++) {
@@ -376,4 +465,34 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
         best_score *= -1;
       }
       return best_score;
+    }
+
+
+    string conv(int i) {
+      switch (i) {
+        case 0:
+          return WHITE_COL;
+          break;
+        case 1:
+          return BLACK_COL;
+          break;
+        case 2:
+          return BLANK;
+          break;
+      }
+      return nullptr; //Shouldnt get here
+    }
+
+    string Player::getString(int i, int j, int k, int l, int m, int n, int o, int p) {
+      string to_ret = "";
+      to_ret.append(conv(i));
+      to_ret.append(conv(j));
+      to_ret.append(conv(k));
+      to_ret.append(conv(l));
+      to_ret.append(conv(m));
+      to_ret.append(conv(n));
+      to_ret.append(conv(o));
+      to_ret.append(conv(p));
+      //cerr << "DOING SOMETHING" << endl;
+      return to_ret;
     }
