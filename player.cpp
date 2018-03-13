@@ -2,7 +2,7 @@
 #include <time.h>
 #include "BoardQueue.hpp"
 #include <math.h>
-
+#include <climits>
 /*
  * Constructor for the player; initialize everything here. The side your AI is
  * on (BLACK or WHITE) is passed in as "side". The constructor must finish
@@ -21,7 +21,6 @@ Player::Player(Side side) {
     {
         opponent_side = WHITE;
     }
-     cerr << "GOING IN" << endl;
     for(int i = 0; i < 3; i++) {
       for (int j = 0; j < 3; j++) {
         for (int k = 0; k < 3; k++) {
@@ -43,8 +42,6 @@ Player::Player(Side side) {
         }
       }
     }
-    unordered_map<string,string>::const_iterator got = edge_combos.find("wwb-b-w-");
-    cerr << got->first << " is " << got->second << endl;
 }
 
 
@@ -70,6 +67,10 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
 {
   //First make the oponents move on our board.
   board.doMove(opponentsMove, opponent_side);
+  if (opponentsMove != NULL) {
+    cerr << "Opponent: " << opponentsMove->x << ", " << opponentsMove->y << endl;
+  }
+
   // if (DOING_BFS) {
   //
   //   BoardQueue * q = new BoardQueue();
@@ -128,8 +129,8 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
     }
     to_move_x = -1;
     to_move_y = -1;
-    alpha = -100000;
-    beta = 100000;
+    alpha = -INT_MAX;
+    beta = INT_MAX;
     if (board.countTotal() == 49 || board.countTotal() == 48) {
       cerr << "White Pieces going into endgame: " << board.countWhite() << endl;
     }
@@ -147,6 +148,7 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
     } else {
       Move * to_move = new Move(to_move_x, to_move_y);
       board.doMove(to_move, player_side);
+      cerr << "Moving at " << to_move_x << ", " << to_move_y << endl;
       return to_move;
     }
 
@@ -339,6 +341,102 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
     }
   }
 
+
+
+  int current_mobility(int oppMoves, int usMoves) {
+    return (int) (1000 * ((double)(usMoves - oppMoves))/((double)(oppMoves + usMoves + 2))) ;
+  }
+  int Player::in_stability(Board * b, Side side) {
+    Side opposite = (side == WHITE) ? BLACK : WHITE;
+    int boardScore = 0;
+    for (int i = 0; i < 8; i++)
+    {
+      for (int j = 0; j < 8; j++)
+      {
+        if (b->get(side, i, j))
+        {
+          boardScore += board_weights[i][j];
+        }
+        else if (b->get(opposite, i, j))
+        {
+          boardScore -= board_weights[i][j];
+        }
+      }
+    }
+    return boardScore;
+  }
+
+
+
+  int potential_mobility(Board * b, Side side) {
+    Side opposite = (side == WHITE) ? BLACK : WHITE;
+    int m1Us = 0;
+    int m1Opp = 0;
+    int m2Us = 0;
+    int m2Opp = 0;
+    int m3Us = 0;
+    int m3Opp = 0;
+    vector<int> m2markedU;
+    vector<int> m2markedO;
+    vector<int> m1marked;
+
+    for(int i = 0; i < 8; i++) {
+      for (int j = 0; j < 8; j++) {
+        if (b->get(side, i, j)) {//Metric 2 + 3 for opp
+          for (int di = -1; di <= 1; di ++) {
+            for (int dj = -1; dj <= 1; dj++) {
+              if (b->onBoard(i + di, j + dj) && !(b->occupied(i + di, j + dj))) {
+                m3Us++;
+                int ind = 8 * i + j;
+                if(std::find(m2markedU.begin(), m2markedU.end(), ind) != m2markedU.end()) {
+
+                } else {
+                  m2Us++;
+                  m2markedU.push_back(ind);
+                }
+              }
+            }
+          }
+        } else if (b->get(opposite, i, j)) { //Metric 2 + 3 for opp
+          for (int di = -1; di <= 1; di ++) {
+            for (int dj = -1; dj <= 1; dj++) {
+              if (b->onBoard(i + di, j + dj) && !(b->occupied(i + di, j + dj))) {
+                m3Opp++;
+                int ind = 8 * i + j;
+                if(std::find(m2markedO.begin(), m2markedO.end(), ind) != m2markedO.end()) {
+
+                } else {
+                  m2Opp++;
+                  m2markedO.push_back(ind);
+                }
+              }
+            }
+          }
+        } else { //Metric 1
+          for (int di = -1; di <= 1; di ++) {
+            for (int dj = -1; dj <= 1; dj++) {
+              if (b->onBoard(i + di, j + dj) && (b->occupied(i + di, j + dj))) {
+                int ind = 8 * i + j;
+                if(std::find(m2markedO.begin(), m2markedO.end(), ind) != m2markedO.end()) {
+
+                } else {
+                  if (b->get(side, i + di, j + dj)) {
+                    m1Us++;
+                  } else {
+                    m1Opp++;
+                  }
+                  m1marked.push_back(ind);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+
+    return current_mobility(m1Opp, m1Us) + current_mobility(m2Opp, m2Us) + current_mobility(m3Opp, m3Us);
+  }
     /**
      * Returns a metric of the state of the board, where higher numbers are
      * better with respect to the side given as a parameter.
@@ -346,9 +444,10 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
      * @param board A board pointer which references the board to be evaluated
      * @param side The side with which the board is evaluated with respect to.
      */
-     int Player::getBoardScore(Board * b, Side side, int oppMoves)
+     int Player::getBoardScore(Board * b, Side side)
      {
        Side opposite = (side == WHITE) ? BLACK : WHITE;
+
        if (b->countTotal() == 64) {
          return b->count(side) - b->count(opposite);
          /*
@@ -356,31 +455,35 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
          EXTEND, which is cool bc this is a quick calculation so we can go deeper
          faster, and this will guarantee we WIN if it is forcibly possible at a
          depth of MAX_DEPTH + EXTEND.
-
          */
        } else {
+         int oppMoves = b->int_hasMoves(opposite);
+         int usMoves = b->int_hasMoves(side);
 
-         int boardScore = 0;
-         for (int i = 0; i < 8; i++)
-         {
-           for (int j = 0; j < 8; j++)
-           {
-             if (b->get(side, i, j))
-             {
-               boardScore += board_weights[i][j];
-             }
-             else if (b->get(opposite, i, j))
-             {
-               boardScore -= board_weights[i][j];
-             }
-           }
-         }
-         int num = b->int_hasMoves(side);
-         return boardScore + (side == player_side ? num : -num);
+         //  if (player_side == WHITE) {
+         // //    int eval = esac(b->countTotal()) * edge_stability(b, side) +
+         // //            cmac(b->countTotal()) * current_mobility(oppMoves, usMoves) +
+         // //            36 * in_stability(b, side) +
+         // //            99 * potential_mobility(b, side);
+         // //    return eval;
+         // return  100 * in_stability(b, side)+
+         //
+         //         cmac(b->countTotal()) * current_mobility(oppMoves, usMoves)
+         //         + 99 * potential_mobility(b, side);
+         //  } else {
 
-        }
+
+
+         //double move_dif = ((double)(usMoves - oppMoves)) / ((double)(usMoves + oppMoves + 2));
+         //cerr << (int)(move_dif * 16) << endl; ((int)(16 * move_dif) +
+         return  110 * in_stability(b, side)+
+                (esac(b->countTotal())/3) * edge_stability(b, side) +
+                 cmac(b->countTotal()) * current_mobility(oppMoves, usMoves)
+                 + 99 * potential_mobility(b, side);
+        //}
 
      }
+   }
 
     // void Player::enqueue_boardState(BoardState * bs, BoardQueue * q)
     // {
@@ -411,15 +514,11 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
 
       if ((depth == MAX_DEPTH && b->countTotal() < 64 - EXTEND) || (b->countTotal() == 64)) {
         //if (depth > MAX_DEPTH) cerr << "!!!" << depth << endl;
-        int oppMoves = 0;//b->int_hasMoves();
-        if (depth % 2 == 0) {
-          return -1 * getBoardScore(b, curr, oppMoves);
-        } else {
-          return getBoardScore(b, curr, oppMoves);
-        }
+        return getBoardScore(b, curr);
+
       }
-      bool no_scores = true;
-      int best_score = -100000;
+
+      int best_score = -INT_MAX;
       for(int i = 0; i < 8; i++) {
         bool we_should_break = false;
         for (int j = 0; j < 8; j++) {
@@ -428,41 +527,30 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
             Board * copy = b->copy();
             copy->doMove(&potential, curr);
             Side opposite = (curr == WHITE) ? BLACK : WHITE;
+            //Simple Negamax (from rec slides)
+            int score = -recursiveMoveFind(copy, depth + 1, opposite);
 
-            int score = recursiveMoveFind(copy, depth + 1, opposite);
-
-            if (curr == player_side) {
-              alpha = alpha > score ? alpha : score; //MAXIMIZE ALPHA
-
-              score *= -1; //For other stuff
-            } else {
-              alpha = alpha < score ? alpha : score; //MINIMIZE BETA
-            }
-            if (beta <= alpha && depth != 0) {
-              //prunes += pow(7, (MAX_DEPTH - depth));
-              we_should_break = true;
-              break; //Don't search this move, prune the tree.
-            }
-
-            //score *= (curr == player_side) ? -1 : 1;
-
-            if (no_scores || score > best_score) {
-              no_scores = false;
+            if (score > best_score || best_score == -INT_MAX) {
               best_score = score;
               if (depth == 0) {
                 to_move_x = potential.x;
                 to_move_y = potential.y;
               }
             }
+            alpha = (alpha > score) ? alpha : score;
+            if (alpha >= beta) {
+              we_should_break = true;
+              break;
+            }
+
+
+
             delete(copy);
           }
         }
         if (we_should_break) {
           break;
         }
-      }
-      if (curr == player_side) {
-        best_score *= -1;
       }
       return best_score;
     }
@@ -495,4 +583,246 @@ Move *Player::doMove(Move *opponentsMove, int msLeft)
       to_ret.append(conv(p));
       //cerr << "DOING SOMETHING" << endl;
       return to_ret;
+    }
+
+
+    int Player::edge_stability(Board * b, Side s) {
+      Side opp = (s == WHITE) ? BLACK : WHITE;
+      int stability = 0;
+      unordered_map<string,string>::const_iterator got;
+      //Edge 1
+      string key = "";
+      for (int i = 0; i < 8; i++) {
+        if (b->get(WHITE, i, 0)) {
+          key.append(WHITE_COL);
+        } else if (b->get(BLACK, i, 0)) {
+          key.append(BLACK_COL);
+        } else {
+          key.append(BLANK);
+        }
+      }
+      got = edge_combos.find(key);
+      string val = got->second;
+      for (int i = 0; i < 8; i++) {
+        int to_add = -1;
+        string temp = val.substr(i, 1);
+        if (temp.compare(STABLE)) {
+            if (i == 0 || i == 7) {
+              to_add = 700;
+            } else if (i == 1 || i == 6) {
+              to_add = 1200;
+            } else {
+              to_add = 1000;
+            }
+        } else if (temp.compare(SEMI_STABLE)) {
+
+            to_add = 200;
+        } else {
+            if (i == 1 || i == 6) {
+              to_add = -25;
+            } else {
+              to_add = 50;
+            }
+        }
+        if (b->get(s, i, 0)) {
+          stability += to_add;
+        } else if (b->get(opp, i, 0)) {
+          stability -= to_add;
+        }
+
+      }
+      //Edge 2
+      key = "";
+      for (int i = 0; i < 8; i++) {
+        if (b->get(WHITE, i, 7)) {
+          key.append(WHITE_COL);
+        } else if (b->get(BLACK, i, 7)) {
+          key.append(BLACK_COL);
+        } else {
+          key.append(BLANK);
+        }
+      }
+      got = edge_combos.find(key);
+      val = got->second;
+      for (int i = 0; i < 8; i++) {
+        int to_add = -1;
+        string temp = val.substr(i, 1);
+        if (temp.compare(STABLE)) {
+            if (i == 0 || i == 7) {
+              to_add = 700;
+            } else if (i == 1 || i == 6) {
+              to_add = 1200;
+            } else {
+              to_add = 1000;
+            }
+        } else if (temp.compare(SEMI_STABLE)) {
+
+            to_add = 200;
+        } else {
+            if (i == 1 || i == 6) {
+              to_add = -25;
+            } else {
+              to_add = 50;
+            }
+        }
+        if (b->get(s, i, 7)) {
+          stability += to_add;
+        } else if (b->get(opp, i, 7)) {
+          stability -= to_add;
+        }
+
+      }
+      //Edge 3
+      key = "";
+      for (int i = 0; i < 8; i++) {
+        if (b->get(WHITE, 0, i)) {
+          key.append(WHITE_COL);
+        } else if (b->get(BLACK, 0, i)) {
+          key.append(BLACK_COL);
+        } else {
+          key.append(BLANK);
+        }
+      }
+      got = edge_combos.find(key);
+      val = got->second;
+      for (int i = 0; i < 8; i++) {
+        int to_add = -1;
+        string temp = val.substr(i, 1);
+        if (temp.compare(STABLE)) {
+            if (i == 0 || i == 7) {
+              to_add = 700;
+            } else if (i == 1 || i == 6) {
+              to_add = 1200;
+            } else {
+              to_add = 1000;
+            }
+        } else if (temp.compare(SEMI_STABLE)) {
+
+            to_add = 200;
+        } else {
+            if (i == 1 || i == 6) {
+              to_add = -25;
+            } else {
+              to_add = 50;
+            }
+        }
+        if (b->get(s, 0, i)) {
+          stability += to_add;
+        } else if (b->get(opp, 0, i)) {
+          stability -= to_add;
+        }
+
+      }
+      //Edge 4
+      key = "";
+      for (int i = 0; i < 8; i++) {
+        if (b->get(WHITE, 7, i)) {
+          key.append(WHITE_COL);
+        } else if (b->get(BLACK, 7, i)) {
+          key.append(BLACK_COL);
+        } else {
+          key.append(BLANK);
+        }
+      }
+      got = edge_combos.find(key);
+      val = got->second;
+      for (int i = 0; i < 8; i++) {
+        int to_add = -1;
+        string temp = val.substr(i, 1);
+        if (temp.compare(STABLE)) {
+            if (i == 0 || i == 7) {
+              to_add = 700;
+            } else if (i == 1 || i == 6) {
+              to_add = 1200;
+            } else {
+              to_add = 1000;
+            }
+        } else if (temp.compare(SEMI_STABLE)) {
+
+            to_add = 200;
+        } else {
+            if (i == 1 || i == 6) {
+              to_add = -25;
+            } else {
+              to_add = 50;
+            }
+        }
+        if (b->get(s, 7, i)) {
+          stability += to_add;
+        } else if (b->get(opp, 7, i)) {
+          stability -= to_add;
+        }
+
+      }
+
+      //Here we will deal with the X-squares, very important to get right.
+      if (!b->occupied(0,0)) { //Corner 1
+        Move m(0,0);
+        if (b->get(s, 1, 1)) {
+          if (b->checkMove(&m, opp)) {
+            stability -= 1200;
+          } else {
+            stability -= 600;
+          }
+        } else if (b->get(opp, 1, 1)) {
+          if (b->checkMove(&m, s)) {
+            stability += 1200;
+          } else {
+            stability += 600;
+          }
+        }
+      }
+
+      if (!b->occupied(0,7)) { //Corner 2
+        Move m(0,7);
+        if (b->get(s, 1, 6)) {
+          if (b->checkMove(&m, s)) {
+            stability -= 1200;
+          } else {
+            stability -= 600;
+          }
+        } else if (b->get(opp, 1, 6)) {
+          if (b->checkMove(&m, s)) {
+            stability += 1200;
+          } else {
+            stability += 600;
+          }
+        }
+      }
+
+      if (!b->occupied(7,0)) { //Corner 3
+        Move m(7,0);
+        if (b->get(s, 6, 1)) {
+          if (b->checkMove(&m, s)) {
+            stability -= 1200;
+          } else {
+            stability -= 600;
+          }
+        } else if (b->get(opp, 6, 1)) {
+          if (b->checkMove(&m, s)) {
+            stability += 1200;
+          } else {
+            stability += 600;
+          }
+        }
+      }
+
+      if (!b->occupied(7,7)) { //Corner 4
+        Move m(7,7);
+        if (b->get(s, 6, 6)) {
+          if (b->checkMove(&m, s)) {
+            stability -= 1200;
+          } else {
+            stability -= 600;
+          }
+        } else if (b->get(opp, 6, 6)) {
+          if (b->checkMove(&m, s)) {
+            stability += 1200;
+          } else {
+            stability += 600;
+          }
+        }
+      }
+
+      return stability;
     }

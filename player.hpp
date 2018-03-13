@@ -1,6 +1,7 @@
 #ifndef __PLAYER_H__
 #define __PLAYER_H__
 
+#include <algorithm> //Only used for finding an element in a vector.
 #include <iostream>
 #include "common.hpp"
 #include "board.hpp"
@@ -39,14 +40,15 @@ public:
     int beta;
     //int prunes = 0;
     Move *doMove(Move *opponentsMove, int msLeft);
-
+    int edge_stability(Board * b, Side s);
+    int in_stability(Board * b, Side side);
     // Flag to tell if the player is running within the test_minimax context
     bool testingMinimax;
 
     unordered_map<string, string> edge_combos;
 
   private:
-    int getBoardScore(Board * b, Side side, int oppMoves);
+    int getBoardScore(Board * b, Side side);
     int * BFS(double limit, BoardQueue * q);
     void enqueue_boardState(BoardState * bs, BoardQueue * q);
     string get_stability(string key);
